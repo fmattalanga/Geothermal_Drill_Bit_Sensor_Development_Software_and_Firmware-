@@ -1,0 +1,36 @@
+# ICS Core — Sensor Pipeline & Analytics
+# Python 3.9+
+#
+# Install all:     pip install -r requirements.txt
+# Tests only:      pip install pytest scipy numpy
+# ──────────────────────────────────────────────────────────────────────────────
+
+# ── Core data ─────────────────────────────────────────────────────────────────
+pandas>=2.0.0
+numpy>=1.24.0
+
+# ── Signal processing (sensor models + FFT/STFT in analytics notebook) ────────
+scipy>=1.11.0
+
+# ── Interactive plotting (GeoTorpedo analytics notebook) ──────────────────────
+plotly>=5.18.0
+
+# ── Notebook file-selector UI (Cell 2 in analytics notebook) ──────────────────
+ipywidgets>=8.1.0
+
+# ── Static image export for HTML report generator ─────────────────────────────
+kaleido>=0.2.1
+
+# ── Notebook environment ──────────────────────────────────────────────────────
+jupyter>=1.0.0
+notebook>=7.0.0
+nbconvert>=7.0.0
+
+# ── Sensor model test suite ───────────────────────────────────────────────────
+pytest>=7.4.0
+
+# ── Optional: JSON test reports (used by ics_sandbox/reports/) ────────────────
+# pytest-json-report>=1.5.0
+
+# ── Optional: strip notebook outputs before committing (highly recommended) ───
+# nbstripout>=0.7.1

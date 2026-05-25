@@ -1,0 +1,13 @@
+# Git LFS — track large files so they don't bloat the repo
+# The 91 MB converted JSON exceeds GitHub's 50 MB soft limit
+Bath Uni project 2026/100Hz Sampled_converted.json filter=lfs diff=lfs merge=lfs -text
+# Also track any future large CSV / JSON data files via LFS
+Bath Uni project 2026/*.csv filter=lfs diff=lfs merge=lfs -text
+# Treat all CSV/JSON as text for line-ending normalisation (except LFS-tracked)
+*.csv text eol=lf
+*.json text eol=lf
+*.ipynb text eol=lf
+*.md text eol=lf
+*.html text eol=lf
+Bath[[:space:]]Uni[[:space:]]project[[:space:]]2026/100Hz[[:space:]]Sampled_converted.json filter=lfs diff=lfs merge=lfs -text
+Bath[[:space:]]Uni[[:space:]]project[[:space:]]2026/*.csv filter=lfs diff=lfs merge=lfs -text

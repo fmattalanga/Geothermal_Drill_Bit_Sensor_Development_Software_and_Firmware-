@@ -1,0 +1,65 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+*.whl
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.env
+.venv
+env/
+venv/
+ENV/
+
+# ── Jupyter ────────────────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# ── pytest ────────────────────────────────────────────────────────────────────
+.pytest_cache/
+**/.pytest_cache/
+ics_sandbox/reports/results.json
+# Keep sensor_dashboard.html out of the repo (generated, large)
+ics_sandbox/reports/sensor_dashboard.html
+
+# ── Generated HTML reports (reproducible from notebooks) ──────────────────────
+*_run_report_*.html
+bha_live_dashboard.html
+ICS_notebook.html
+ics_output/*_operator_report.html
+
+# ── Large generated data (tracked by Git LFS or excluded) ─────────────────────
+# Bath Uni project 2026/100Hz Sampled_converted.json  ← handled via .gitattributes (LFS)
+# Exclude the raw_gen duplicate directory
+ics_raw_gen_output/
+
+# ── OS junk ───────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ── IDE / editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.pydevproject
+
+# ── Secrets / config ──────────────────────────────────────────────────────────
+*.env
+config.local.*
+secrets.*
