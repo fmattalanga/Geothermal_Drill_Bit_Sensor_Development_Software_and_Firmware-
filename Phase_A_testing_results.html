@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ICS Core — Sensor Validation Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg0:#0b0c0e;--bg1:#111318;--bg2:#181b22;--bg3:#1f232d;--bg4:#262b38;
+  --amber:#f59e0b;--amber-dim:#92600a;--amber-glow:rgba(245,158,11,0.10);
+  --teal:#14b8a6;--red:#ef4444;--green:#22c55e;--blue:#3b82f6;
+  --text-primary:#e8eaf0;--text-secondary:#8b92a5;--text-muted:#4a5168;
+  --border:rgba(255,255,255,0.07);--border-accent:rgba(245,158,11,0.3);
+  --grid:rgba(255,255,255,0.022);
+  --font-display:'Syne',sans-serif;--font-mono:'Space Mono',monospace;--font-body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg0);color:var(--text-primary);font-family:var(--font-body);font-size:15px;line-height:1.6;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:40px 40px;pointer-events:none;z-index:0}
+
+/* HEADER */
+.header{position:relative;z-index:10;border-bottom:1px solid var(--border);background:rgba(17,19,24,0.98);padding:0 40px}
+.header-top{display:flex;align-items:center;justify-content:space-between;padding:18px 0;border-bottom:1px solid var(--border)}
+.logo-group{display:flex;align-items:center;gap:14px}
+.logo-mark{width:36px;height:36px;background:var(--amber);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mark::after{content:'';width:13px;height:13px;background:var(--bg0);clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%)}
+.logo-text{font-family:var(--font-display);font-size:13px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;color:var(--text-secondary)}
+.logo-text span{color:var(--amber)}
+.header-meta{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.meta-pill{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);background:var(--bg3);border:1px solid var(--border);border-radius:4px;padding:4px 10px;letter-spacing:0.04em}
+.meta-pill.live{border-color:var(--amber-dim);color:var(--amber);background:var(--amber-glow)}
+.meta-pill.live::before{content:'● ';animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
+.header-title{padding:22px 0 18px}
+.page-title{font-family:var(--font-display);font-size:30px;font-weight:800;letter-spacing:-0.02em;line-height:1.1}
+.page-title span{color:var(--amber)}
+.page-subtitle{font-size:13px;color:var(--text-secondary);margin-top:5px;font-weight:300}
+
+/* TABS */
+.nav-tabs{display:flex;border-top:1px solid var(--border)}
+.nav-tab{font-family:var(--font-mono);font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--text-muted);padding:13px 18px;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all 0.2s;position:relative;top:1px}
+.nav-tab:hover{color:var(--text-secondary)}
+.nav-tab.active{color:var(--amber);border-bottom-color:var(--amber)}
+
+/* LAYOUT */
+.main{position:relative;z-index:1;padding:28px 40px;max-width:1400px;margin:0 auto}
+.section{display:none}.section.active{display:block}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px}
+.full-col{margin-bottom:18px}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:28px}
+.kpi-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:18px;position:relative;overflow:hidden}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi-card.pass::before{background:var(--green)}.kpi-card.fail::before{background:var(--red)}
+.kpi-card.warn::before{background:var(--amber)}.kpi-card.info::before{background:var(--blue)}
+.kpi-card.total::before{background:var(--text-muted)}
+.kpi-label{font-family:var(--font-mono);font-size:10px;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px}
+.kpi-value{font-family:var(--font-display);font-size:34px;font-weight:800;line-height:1}
+.kpi-card.pass .kpi-value{color:var(--green)}.kpi-card.fail .kpi-value{color:var(--red)}
+.kpi-card.warn .kpi-value{color:var(--amber)}.kpi-card.info .kpi-value{color:var(--blue)}
+.kpi-card.total .kpi-value{color:var(--text-primary)}
+.kpi-sub{font-size:12px;color:var(--text-muted);margin-top:4px}
+
+/* PANEL */
+.panel{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.panel-title{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--amber)}
+.panel-body{padding:18px}
+
+/* TABLE */
+.result-table{width:100%;border-collapse:collapse}
+.result-table th{font-family:var(--font-mono);font-size:10px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg3)}
+.result-table td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+.result-table tr:last-child td{border-bottom:none}
+.result-table tr:hover td{background:rgba(255,255,255,0.015)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:0.08em;padding:3px 9px;border-radius:4px}
+.badge::before{content:'●';font-size:8px}
+.badge-pass{background:rgba(34,197,94,0.15);color:var(--green);border:1px solid rgba(34,197,94,0.3)}
+.badge-failed{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.badge-error{background:rgba(239,68,68,0.15);color:var(--red);border:1px solid rgba(239,68,68,0.3)}
+.badge-skipped{background:rgba(139,146,165,0.1);color:var(--text-muted);border:1px solid var(--border)}
+
+/* CHART */
+.chart-wrap{position:relative;height:260px}.chart-wrap-lg{position:relative;height:300px}
+
+/* SENSOR CARDS */
+.sensor-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:18px}
+.sensor-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px;cursor:pointer;transition:all 0.2s}
+.sensor-card:hover{border-color:var(--border-accent)}
+.sensor-card.selected{border-color:var(--amber);background:linear-gradient(135deg,var(--bg3),var(--bg2));box-shadow:0 0 0 1px var(--amber-dim),inset 0 0 40px var(--amber-glow)}
+.sensor-name{font-family:var(--font-display);font-size:13px;font-weight:700;color:var(--text-primary);margin-bottom:10px}
+.sensor-stats{display:flex;gap:12px}
+.stat-item{flex:1}
+.stat-val{font-family:var(--font-display);font-size:20px;font-weight:700;line-height:1}
+.stat-val.green{color:var(--green)}.stat-val.red{color:var(--red)}
+.stat-lbl{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:0.06em;margin-top:2px}
+
+/* CONSOLE */
+.console{background:var(--bg0);border:1px solid var(--border);border-radius:8px;padding:14px;font-family:var(--font-mono);font-size:12px;line-height:1.8;max-height:420px;overflow-y:auto}
+.cl{display:flex;gap:10px}
+.ct{color:var(--text-muted);flex-shrink:0;min-width:80px}
+.cp{color:var(--green)}.cf{color:var(--red)}.ci{color:var(--teal)}.cw{color:var(--amber)}.cd{color:var(--text-muted)}
+
+/* ERROR BOX */
+.error-box{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:6px;padding:10px 14px;margin-top:8px;font-family:var(--font-mono);font-size:11px;color:var(--red);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg1)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+
+/* FOOTER */
+.footer{position:relative;z-index:1;border-top:1px solid var(--border);padding:18px 40px;display:flex;align-items:center;justify-content:space-between}
+.footer-text{font-family:var(--font-mono);font-size:11px;color:var(--text-muted);letter-spacing:0.04em}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn 0.35s ease forwards}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr)}.sensor-grid{grid-template-columns:repeat(2,1fr)}.two-col,.three-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-top">
+    <div class="logo-group">
+      <div class="logo-mark"></div>
+      <div>
+        <div class="logo-text"><span>ICS</span> Core System</div>
+        <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px">GEO-TVP-001 · Rev A · ZerdaLabs</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="meta-pill">dsPIC33AK256MC205-H/M7</div>
+      <div class="meta-pill" id="pill-python">Python unknown</div>
+      <div class="meta-pill" id="pill-pytest">pytest unknown</div>
+      <div class="meta-pill" id="pill-time">08 May 2026  05:55:37</div>
+      <div class="meta-pill live">Phase A — Simulation</div>
+    </div>
+  </div>
+  <div class="header-title">
+    <h1 class="page-title">Sensor Validation <span>Dashboard</span></h1>
+    <p class="page-subtitle">Geothermal Downhole Sensor Package · Pre-prototype simulation validation · Generated from live pytest output</p>
+  </div>
+  <nav class="nav-tabs">
+    <button class="nav-tab active" onclick="showSection('overview',this)">Overview</button>
+    <button class="nav-tab" onclick="showSection('sensors',this)">Sensor Analysis</button>
+    <button class="nav-tab" onclick="showSection('tests',this)">All Tests</button>
+    <button class="nav-tab" onclick="showSection('console',this)">Console</button>
+  </nav>
+</header>
+
+<main class="main">
+
+<!-- OVERVIEW -->
+<div class="section active fade-in" id="section-overview">
+  <div class="kpi-grid">
+    <div class="kpi-card total"><div class="kpi-label">Total Tests</div><div class="kpi-value" id="k-total">37</div><div class="kpi-sub">across all sensors</div></div>
+    <div class="kpi-card pass"><div class="kpi-label">Passed</div><div class="kpi-value" id="k-passed">37</div><div class="kpi-sub" id="k-passrate">100% pass rate</div></div>
+    <div class="kpi-card fail"><div class="kpi-label">Failed</div><div class="kpi-value" id="k-failed">0</div><div class="kpi-sub">regressions</div></div>
+    <div class="kpi-card warn"><div class="kpi-label">Skipped</div><div class="kpi-value" id="k-skipped">0</div><div class="kpi-sub">not run</div></div>
+    <div class="kpi-card info"><div class="kpi-label">Duration</div><div class="kpi-value" style="font-size:26px;margin-top:4px">2.38s</div><div class="kpi-sub">total runtime</div></div>
+  </div>
+
+  <div class="two-col">
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><div class="dot"></div>Pass rate by sensor</div></div>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="barChart"></canvas></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><div class="dot"></div>Test distribution</div></div>
+      <div class="panel-body"><div class="chart-wrap"><canvas id="doughnutChart"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="panel full-col">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot"></div>Per-sensor summary</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">LIVE DATA FROM PYTEST</span>
+    </div>
+    <div style="padding:0">
+      <table class="result-table">
+        <thead><tr><th>Sensor</th><th>Total</th><th>Passed</th><th>Failed</th><th>Pass Rate</th><th>Status</th></tr></thead>
+        <tbody>
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-size:12px;color:#f59e0b;">ADXL206HDZ</span></td>
+          <td style="font-family:var(--font-mono);font-size:13px;">8</td>
+          <td style="color:var(--green);font-family:var(--font-mono);">8</td>
+          <td style="color:var(--red);font-family:var(--font-mono);">0</td>
+          <td style="font-family:var(--font-mono);">100%</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-size:12px;color:#14b8a6;">ADXRS645HDYZ</span></td>
+          <td style="font-family:var(--font-mono);font-size:13px;">6</td>
+          <td style="color:var(--green);font-family:var(--font-mono);">6</td>
+          <td style="color:var(--red);font-family:var(--font-mono);">0</td>
+          <td style="font-family:var(--font-mono);">100%</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-size:12px;color:#3b82f6;">AT/10/TB</span></td>
+          <td style="font-family:var(--font-mono);font-size:13px;">6</td>
+          <td style="color:var(--green);font-family:var(--font-mono);">6</td>
+          <td style="color:var(--red);font-family:var(--font-mono);">0</td>
+          <td style="font-family:var(--font-mono);">100%</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-size:12px;color:#22c55e;">LM95172</span></td>
+          <td style="font-family:var(--font-mono);font-size:13px;">7</td>
+          <td style="color:var(--green);font-family:var(--font-mono);">7</td>
+          <td style="color:var(--red);font-family:var(--font-mono);">0</td>
+          <td style="font-family:var(--font-mono);">100%</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+        </tr>
+        <tr>
+          <td><span style="font-family:var(--font-mono);font-size:12px;color:#ef4444;">MAX31856</span></td>
+          <td style="font-family:var(--font-mono);font-size:13px;">10</td>
+          <td style="color:var(--green);font-family:var(--font-mono);">10</td>
+          <td style="color:var(--red);font-family:var(--font-mono);">0</td>
+          <td style="font-family:var(--font-mono);">100%</td>
+          <td><span class="badge badge-pass">PASS</span></td>
+        </tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- SENSOR ANALYSIS -->
+<div class="section fade-in" id="section-sensors">
+  <div class="sensor-grid">
+        <div class="sensor-card selected" id="sc-adxl206hdz" onclick="selectSensor('adxl206hdz')">
+          <div class="sensor-name">ADXL206HDZ</div>
+          <div class="sensor-stats">
+            <div class="stat-item"><div class="stat-val green">8</div><div class="stat-lbl">Tests</div></div>
+            <div class="stat-item"><div class="stat-val green">8</div><div class="stat-lbl">Passed</div></div>
+            <div class="stat-item"><div class="stat-val green">100%</div><div class="stat-lbl">Rate</div></div>
+          </div>
+        </div>
+        <div class="sensor-card " id="sc-adxrs645hdyz" onclick="selectSensor('adxrs645hdyz')">
+          <div class="sensor-name">ADXRS645HDYZ</div>
+          <div class="sensor-stats">
+            <div class="stat-item"><div class="stat-val green">6</div><div class="stat-lbl">Tests</div></div>
+            <div class="stat-item"><div class="stat-val green">6</div><div class="stat-lbl">Passed</div></div>
+            <div class="stat-item"><div class="stat-val green">100%</div><div class="stat-lbl">Rate</div></div>
+          </div>
+        </div>
+        <div class="sensor-card " id="sc-at10tb" onclick="selectSensor('at10tb')">
+          <div class="sensor-name">AT/10/TB</div>
+          <div class="sensor-stats">
+            <div class="stat-item"><div class="stat-val green">6</div><div class="stat-lbl">Tests</div></div>
+            <div class="stat-item"><div class="stat-val green">6</div><div class="stat-lbl">Passed</div></div>
+            <div class="stat-item"><div class="stat-val green">100%</div><div class="stat-lbl">Rate</div></div>
+          </div>
+        </div>
+        <div class="sensor-card " id="sc-lm95172" onclick="selectSensor('lm95172')">
+          <div class="sensor-name">LM95172</div>
+          <div class="sensor-stats">
+            <div class="stat-item"><div class="stat-val green">7</div><div class="stat-lbl">Tests</div></div>
+            <div class="stat-item"><div class="stat-val green">7</div><div class="stat-lbl">Passed</div></div>
+            <div class="stat-item"><div class="stat-val green">100%</div><div class="stat-lbl">Rate</div></div>
+          </div>
+        </div>
+        <div class="sensor-card " id="sc-max31856" onclick="selectSensor('max31856')">
+          <div class="sensor-name">MAX31856</div>
+          <div class="sensor-stats">
+            <div class="stat-item"><div class="stat-val green">10</div><div class="stat-lbl">Tests</div></div>
+            <div class="stat-item"><div class="stat-val green">10</div><div class="stat-lbl">Passed</div></div>
+            <div class="stat-item"><div class="stat-val green">100%</div><div class="stat-lbl">Rate</div></div>
+          </div>
+        </div></div>
+  <div class="panel full-col">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot"></div><span id="sensor-panel-title">Select a sensor above</span></div>
+    </div>
+    <div class="panel-body" style="padding:0">
+      <table class="result-table" id="sensor-detail-table">
+        <thead><tr><th>Test Function</th><th>Duration (ms)</th><th>Status</th><th>Error</th></tr></thead>
+        <tbody id="sensor-detail-body"></tbody>
+      </table>
+    </div>
+  </div>
+  <div class="panel full-col" style="margin-top:18px">
+    <div class="panel-header"><div class="panel-title"><div class="dot"></div>Duration profile (ms)</div></div>
+    <div class="panel-body"><div class="chart-wrap-lg"><canvas id="durationChart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ALL TESTS -->
+<div class="section fade-in" id="section-tests">
+  <div class="panel full-col">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot"></div>All test results</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--green)" id="summary-badge">37/37 PASSED</span>
+    </div>
+    <div style="padding:0">
+      <table class="result-table">
+        <thead><tr><th>Sensor</th><th>Class</th><th>Test Function</th><th>Duration (ms)</th><th>Status</th></tr></thead>
+        <tbody id="all-tests-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CONSOLE -->
+<div class="section fade-in" id="section-console">
+  <div class="panel full-col">
+    <div class="panel-header">
+      <div class="panel-title"><div class="dot"></div>Test console output</div>
+      <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-muted)">pytest tests/ -v --json-report</span>
+    </div>
+    <div class="panel-body">
+      <div class="console" id="console-out"></div>
+    </div>
+  </div>
+  <div class="panel full-col" style="margin-top:18px">
+    <div class="panel-header"><div class="panel-title"><div class="dot"></div>How to refresh this dashboard</div></div>
+    <div class="panel-body">
+      <div class="console">
+        <div class="cl"><span class="ct">#</span><span class="cd">From geo_sensor_validation/ folder</span></div>
+        <div class="cl"><span class="ct">$</span><span class="ci">python generate_dashboard.py</span></div>
+        <div class="cl"><span class="ct">&nbsp;</span><span class="cd">&nbsp;</span></div>
+        <div class="cl"><span class="ct">#</span><span class="cd">Or run just the tests first then generate</span></div>
+        <div class="cl"><span class="ct">$</span><span class="ci">pytest tests/ -v --json-report --json-report-file=reports/results.json</span></div>
+        <div class="cl"><span class="ct">$</span><span class="ci">python generate_dashboard.py</span></div>
+        <div class="cl"><span class="ct">&nbsp;</span><span class="cd">&nbsp;</span></div>
+        <div class="cl"><span class="ct">#</span><span class="cw">Phase B — hardware mode</span></div>
+        <div class="cl"><span class="ct">$</span><span class="cw">set SENSOR_MODE=hardware && python generate_dashboard.py</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-text">GEO-TVP-001 · Rev A · Internal Use Only · ZerdaLabs / University of Bath</div>
+  <div class="footer-text" id="footer-ts">Generated: 08 May 2026  05:55:37</div>
+</footer>
+
+<script>
+const TESTS  = [
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_zero_g_output",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_zero_g_output",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_positive_1g_output",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_positive_1g_output",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_negative_1g_output",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_negative_1g_output",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_full_scale_positive",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_full_scale_positive",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_over_range_clamps",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_over_range_clamps",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_temperature_sensitivity_shift",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_temperature_sensitivity_shift",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_inclination_45_degrees",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_inclination_45_degrees",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxl206.py::TestADXL206::test_level_gives_zero_inclination",
+    "file": "tests/test_adxl206.py",
+    "cls": "TestADXL206",
+    "func": "test_level_gives_zero_inclination",
+    "sensor": "ADXL206HDZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_zero_rate_midpoint",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_zero_rate_midpoint",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_positive_rate_voltage",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_positive_rate_voltage",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_negative_rate_voltage",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_negative_rate_voltage",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_round_trip_rate_accuracy",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_round_trip_rate_accuracy",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_integrate_constant_rate",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_integrate_constant_rate",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_adxrs645.py::TestADXRS645::test_temperature_null_shift",
+    "file": "tests/test_adxrs645.py",
+    "cls": "TestADXRS645",
+    "func": "test_temperature_null_shift",
+    "sensor": "ADXRS645HDYZ",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_zero_g_gives_midpoint_voltage",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_zero_g_gives_midpoint_voltage",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_positive_peak_voltage",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_positive_peak_voltage",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_negative_peak_voltage",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_negative_peak_voltage",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_max_range_does_not_clip",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_max_range_does_not_clip",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_round_trip_g_accuracy",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_round_trip_g_accuracy",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_at10tb.py::TestAT10TBSignalChain::test_antialiasing_filter_attenuates_above_cutoff",
+    "file": "tests/test_at10tb.py",
+    "cls": "TestAT10TBSignalChain",
+    "func": "test_antialiasing_filter_attenuates_above_cutoff",
+    "sensor": "AT/10/TB",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_25c_round_trip",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_25c_round_trip",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_negative_temperature",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_negative_temperature",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_max_temperature",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_max_temperature",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_conversion_complete_flag",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_conversion_complete_flag",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_out_of_range_raises",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_out_of_range_raises",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_16bit_resolution_finer",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_16bit_resolution_finer",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_lm95172.py::TestLM95172::test_geothermal_operating_range",
+    "file": "tests/test_lm95172.py",
+    "cls": "TestLM95172",
+    "func": "test_geothermal_operating_range",
+    "sensor": "LM95172",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_tc_25c_round_trip",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_tc_25c_round_trip",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_tc_high_temperature",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_tc_high_temperature",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_tc_negative_temperature",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_tc_negative_temperature",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_cj_temperature_round_trip",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_cj_temperature_round_trip",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_cj_out_of_range_raises",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_cj_out_of_range_raises",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_fault_open_circuit_detection",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_fault_open_circuit_detection",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_fault_tc_high_detection",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_fault_tc_high_detection",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_no_fault_clear_sr",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_no_fault_clear_sr",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_geothermal_temperature_sweep",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_geothermal_temperature_sweep",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  },
+  {
+    "nodeid": "tests/test_max31856.py::TestMAX31856::test_resolution_accuracy",
+    "file": "tests/test_max31856.py",
+    "cls": "TestMAX31856",
+    "func": "test_resolution_accuracy",
+    "sensor": "MAX31856",
+    "outcome": "PASSED",
+    "duration": 0,
+    "error": ""
+  }
+];
+const STATS  = {
+  "total": 37,
+  "passed": 37,
+  "failed": 0,
+  "error": 0,
+  "skipped": 0,
+  "duration": 2.38,
+  "python": "unknown",
+  "pytest": "unknown",
+  "platform": "unknown",
+  "timestamp": "08 May 2026  05:55:37"
+};
+
+const SENSOR_COLORS = {
+  "ADXL206HDZ":  "#f59e0b",
+  "ADXRS645HDYZ":"#14b8a6",
+  "AT/10/TB":    "#3b82f6",
+  "LM95172":     "#22c55e",
+  "MAX31856":    "#ef4444",
+};
+
+// Group tests by sensor
+function groupBySensor(tests) {
+  const g = {};
+  tests.forEach(t => {
+    if (!g[t.sensor]) g[t.sensor] = [];
+    g[t.sensor].push(t);
+  });
+  return g;
+}
+
+const GROUPS = groupBySensor(TESTS);
+const SENSOR_KEYS = Object.keys(GROUPS);
+
+// ── CHART DEFAULTS ──
+const CD = {
+  responsive:true, maintainAspectRatio:false,
+  plugins:{
+    legend:{labels:{color:'#8b92a5',font:{family:"'Space Mono',monospace",size:10},boxWidth:10}},
+    tooltip:{backgroundColor:'#1f232d',borderColor:'#262b38',borderWidth:1,titleColor:'#e8eaf0',bodyColor:'#8b92a5',titleFont:{family:"'Space Mono',monospace",size:11},bodyFont:{family:"'DM Sans',sans-serif",size:12}}
+  },
+  scales:{
+    x:{ticks:{color:'#4a5168',font:{family:"'Space Mono',monospace",size:10}},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'rgba(255,255,255,0.07)'}},
+    y:{ticks:{color:'#4a5168',font:{family:"'Space Mono',monospace",size:10}},grid:{color:'rgba(255,255,255,0.03)'},border:{color:'rgba(255,255,255,0.07)'}}
+  }
+};
+
+// ── NAV ──
+function showSection(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  btn.classList.add('active');
+  if (id === 'sensors') {
+    initSensorSection();
+    selectSensorByKey(Object.keys(GROUPS)[0]);
+  }
+}
+
+// ── BADGE HTML ──
+function badge(outcome) {
+  const cls = 'badge-' + outcome.toLowerCase();
+  return `<span class="badge ${cls}">${outcome}</span>`;
+}
+
+// ── ALL TESTS TABLE ──
+function buildAllTests() {
+  const tbody = document.getElementById('all-tests-body');
+  TESTS.forEach(t => {
+    const color = SENSOR_COLORS[t.sensor] || '#8b92a5';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span style="font-family:var(--font-mono);font-size:12px;color:${color}">${t.sensor}</span></td>
+      <td style="font-family:var(--font-mono);font-size:11px;color:var(--text-muted)">${t.cls}</td>
+      <td style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">${t.func}</td>
+      <td style="font-family:var(--font-mono);font-size:12px">${t.duration}</td>
+      <td>${badge(t.outcome)}</td>
+    `;
+    if (t.outcome !== 'PASSED' && t.error) {
+      const errRow = document.createElement('tr');
+      errRow.innerHTML = `<td colspan="5"><div class="error-box">${t.error.substring(0,400)}</div></td>`;
+      tbody.appendChild(tr);
+      tbody.appendChild(errRow);
+    } else {
+      tbody.appendChild(tr);
+    }
+  });
+}
+
+// ── OVERVIEW CHARTS ──
+function initOverviewCharts() {
+  const sensors = SENSOR_KEYS;
+  const passed  = sensors.map(s => GROUPS[s].filter(t => t.outcome === 'PASSED').length);
+  const failed  = sensors.map(s => GROUPS[s].filter(t => t.outcome !== 'PASSED').length);
+  const totals  = sensors.map(s => GROUPS[s].length);
+
+  new Chart(document.getElementById('barChart'), {
+    type:'bar',
+    data:{
+      labels: sensors,
+      datasets:[
+        {label:'Passed',data:passed,backgroundColor:'rgba(34,197,94,0.7)',borderColor:'#22c55e',borderWidth:1,borderRadius:4},
+        {label:'Failed',data:failed,backgroundColor:'rgba(239,68,68,0.5)',borderColor:'#ef4444',borderWidth:1,borderRadius:4}
+      ]
+    },
+    options:{...CD}
+  });
+
+  new Chart(document.getElementById('doughnutChart'), {
+    type:'doughnut',
+    data:{
+      labels: sensors.map((s,i) => s+' ('+totals[i]+')'),
+      datasets:[{
+        data: totals,
+        backgroundColor: sensors.map(s => SENSOR_COLORS[s] || '#8b92a5'),
+        borderColor:'#111318', borderWidth:3, hoverOffset:6
+      }]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{
+      legend:{position:'right',labels:{color:'#8b92a5',font:{family:"'Space Mono',monospace",size:10},boxWidth:10,padding:12}},
+      tooltip:CD.plugins.tooltip
+    }}
+  });
+}
+
+// ── SENSOR SECTION ──
+let durationChart = null;
+
+function initSensorSection() {
+  // Wire up sensor card clicks
+  SENSOR_KEYS.forEach(s => {
+    const key = s.toLowerCase().replace(/\//g,'').replace(/ /g,'');
+    const el = document.getElementById('sc-' + key);
+    if (el) el.onclick = () => selectSensorByKey(s);
+  });
+}
+
+function selectSensorByKey(sensorName) {
+  // Highlight card
+  SENSOR_KEYS.forEach(s => {
+    const key = s.toLowerCase().replace(/\//g,'').replace(/ /g,'');
+    const el = document.getElementById('sc-' + key);
+    if (el) el.classList.toggle('selected', s === sensorName);
+  });
+
+  const tests = GROUPS[sensorName] || [];
+  document.getElementById('sensor-panel-title').textContent = sensorName + ' — test details';
+
+  // Detail table
+  const tbody = document.getElementById('sensor-detail-body');
+  tbody.innerHTML = '';
+  tests.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="font-family:var(--font-mono);font-size:12px;color:var(--teal)">${t.func}</td>
+      <td style="font-family:var(--font-mono);font-size:12px">${t.duration}</td>
+      <td>${badge(t.outcome)}</td>
+      <td style="font-size:12px;color:var(--red);font-family:var(--font-mono)">${t.outcome !== 'PASSED' ? (t.error||'').substring(0,80) : '—'}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  // Duration bar chart
+  if (durationChart) durationChart.destroy();
+  const color = SENSOR_COLORS[sensorName] || '#f59e0b';
+  durationChart = new Chart(document.getElementById('durationChart'), {
+    type: 'bar',
+    data: {
+      labels: tests.map(t => t.func.replace('test_','')),
+      datasets: [{
+        label: 'Duration (ms)',
+        data: tests.map(t => t.duration),
+        backgroundColor: tests.map(t => t.outcome === 'PASSED' ? color + 'bb' : 'rgba(239,68,68,0.6)'),
+        borderColor: tests.map(t => t.outcome === 'PASSED' ? color : '#ef4444'),
+        borderWidth: 1, borderRadius: 4
+      }]
+    },
+    options: {
+      ...CD,
+      indexAxis: 'y',
+      scales: {
+        x: { ...CD.scales.x, title:{display:true,text:'ms',color:'#4a5168',font:{size:10}} },
+        y: { ...CD.scales.y, ticks:{color:'#8b92a5',font:{family:"'Space Mono',monospace",size:10}} }
+      }
+    }
+  });
+}
+
+// ── CONSOLE ──
+function buildConsole() {
+  const div = document.getElementById('console-out');
+  const platform = STATS.platform || 'unknown';
+  const python   = STATS.python   || 'unknown';
+  const pytest   = STATS.pytest   || 'unknown';
+
+  const lines = [
+    {c:'ci', t:'==================== test session starts ===================='},
+    {c:'cd', t:'platform ' + platform + ' -- Python ' + python + ', pytest-' + pytest},
+    {c:'cd', t:'rootdir: geo_sensor_validation/'},
+    {c:'cd', t:'collected ' + STATS.total + ' items'},
+    {c:'cd', t:' '},
+  ];
+
+  TESTS.forEach(t => {
+    const status = t.outcome === 'PASSED' ? 'PASSED' : 'FAILED';
+    const cls = t.outcome === 'PASSED' ? 'cp' : 'cf';
+    lines.push({c:cls, t: t.file + '::' + t.cls + '::' + t.func + ' ' + status});
+    if (t.outcome !== 'PASSED' && t.error) {
+      t.error.split('\n').slice(0,6).forEach(l => lines.push({c:'cf', t:'  ' + l}));
+    }
+  });
+
+  const total   = STATS.total;
+  const passed  = STATS.passed;
+  const failed  = STATS.failed;
+  const dur     = STATS.duration;
+  const summary = failed === 0
+    ? `==================== ${passed} passed in ${dur}s ====================`
+    : `==================== ${passed} passed, ${failed} failed in ${dur}s ====================`;
+  lines.push({c:'cd', t:' '});
+  lines.push({c: failed === 0 ? 'cp' : 'cf', t: summary});
+
+  lines.forEach(l => {
+    const row = document.createElement('div');
+    row.className = 'cl';
+    row.innerHTML = `<span class="ct"></span><span class="${l.c}">${l.t}</span>`;
+    div.appendChild(row);
+  });
+}
+
+// ── INIT ──
+window.addEventListener('DOMContentLoaded', () => {
+  buildAllTests();
+  buildConsole();
+  initOverviewCharts();
+});
+</script>
+</body>
+</html>
